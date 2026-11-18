@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Flappy Remake</title>
+
+  <!-- iOS / Apple Web App Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Flappy Remake" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#ffd1dc" />
+
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas" width="360" height="640"></canvas>
+    
+    <div id="ui-overlay">
+      <!-- Start Screen -->
+      <div id="start-screen" class="screen">
+        <h1 class="game-title">FLAPPY<br><span id="title-tag">DREAM</span></h1>
+        
+        <div id="selected-char-display" class="character-hero-card">
+          <div id="hero-avatar" class="hero-avatar">🎀</div>
+          <div class="hero-info">
+            <span id="hero-name" class="hero-name">Sylveon</span>
+            <span id="hero-badge" class="hero-badge">POKÉMON</span>
+          </div>
+        </div>
+
+        <div class="main-btn-group">
+          <button id="start-btn" class="arcade-btn pulse-glow">TAP TO PLAY ✨</button>
+          <button id="custom-modal-btn" class="icon-bubble-btn">🎨 CUSTOMIZE</button>
+        </div>
+
+        <p class="hint">Tap screen or Space to flap</p>
+
+        <div class="top-history-preview">
+          <div class="history-title">🏆 BEST SCORE: <span id="start-high-score">0</span></div>
+        </div>
+      </div>
+
+      <!-- Customization Modal Drawer -->
+      <div id="custom-modal" class="modal-sheet hidden">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>CUSTOMIZE 💖</h3>
+            <button id="modal-close-btn" class="close-x">✕</button>
+          </div>
+
+          <div class="modal-content">
+            <!-- Tabs -->
+            <div class="tab-bar">
+              <button id="tab-chars-btn" class="tab-btn active">CHARACTERS</button>
+              <button id="tab-themes-btn" class="tab-btn">THEMES</button>
+            </div>
+
+            <!-- Characters View -->
+            <div id="chars-view" class="drawer-view">
+              <div class="category-title">⭐ FEATURED POKÉMON</div>
+              <div id="pokemon-chars-grid" class="picker-grid"></div>
+
+              <div class="category-title">🌸 ANIME ICONS</div>
+              <div id="anime-chars-grid" class="picker-grid"></div>
+
+              <div class="category-title">🌈 CARTOONS & CLASSICS</div>
+              <div id="cartoon-chars-grid" class="picker-grid"></div>
+            </div>
+
+            <!-- Themes View -->
+            <div id="themes-view" class="drawer-view hidden">
+              <div class="category-title">🎨 BACKGROUND THEMES</div>
+              <div id="themes-grid" class="themes-list"></div>
+            </div>
+          </div>
+          
+          <button id="modal-done-btn" class="arcade-btn modal-done">DONE ✨</button>
+        </div>
+      </div>
+
+      <!-- Game Over Screen -->
+      <div id="game-over-screen" class="screen hidden">
+        <div class="score-card">
+          <h2>GAME OVER</h2>
+          <div class="medal-container">
+            <span class="label">REWARD</span>
+            <div id="medal" class="medal-slot"></div>
+          </div>
+          <div class="stats-container">
+            <div class="stat-row">
+              <span>SCORE</span>
+              <span id="final-score">0</span>
+            </div>
+            <div class="stat-row highlight">
+              <span>BEST SCORE</span>
+              <span id="high-score">0</span>
+            </div>
+          </div>
+
+          <!-- Score History Logs -->
+          <div class="history-section">
+            <div class="history-header">RECENT RUNS</div>
+            <ul id="score-history-list" class="history-list">
+              <!-- Dynamically populated -->
+            </ul>
+          </div>
+        </div>
+
+        <div class="gameover-btn-group">
+          <button id="restart-btn" class="arcade-btn">PLAY AGAIN 💖</button>
+          <button id="gameover-custom-btn" class="icon-bubble-btn">🎨 CHANGE CHAR</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
