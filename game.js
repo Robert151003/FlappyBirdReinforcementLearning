@@ -32,6 +32,7 @@ const animeGrid = document.getElementById('anime-chars-grid');
 const cartoonGrid = document.getElementById('cartoon-chars-grid');
 const themesGrid = document.getElementById('themes-grid');
 
+//#region Game
 // PWA Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -1600,3 +1601,16 @@ function loop() {
 }
 
 loop();
+//#endregion Game
+
+//#region RL Learning
+function getGameState() {
+  return {
+    birdY: bird.y,
+    birdVelocity: bird.velocity,
+    score,
+    pipes: pipes.items
+  };
+}
+
+//#endregion RL Learning
