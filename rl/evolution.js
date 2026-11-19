@@ -3,7 +3,10 @@
 // are produced by mutating those successful parents.
 const EVOLUTION_POPULATION_SIZE = 100;
 const EVOLUTION_ELITE_COUNT = 5;
-const EVOLUTION_MAX_GENERATION_RUNTIME_MS = 10 * 60 * 1000;
+// Headless evaluation is synchronous, so it needs a frame safety ceiling
+// to keep browser validation responsive. Live training uses its own
+// wall-clock generation timer in rl/live-evolution.js.
+const EVOLUTION_HEADLESS_MAX_FRAMES = 5000;
 const EVOLUTION_RANDOM_IMMIGRANT_RATE = 0.1;
 
 function evaluateGenome(genome, pipeSequence) {
@@ -11,12 +14,9 @@ function evaluateGenome(genome, pipeSequence) {
   // for a candidate policy.
   const simulation = createHeadlessSimulation(pipeSequence);
 
-  const startedAt = performance.now();
-
   while (
     !simulation.done &&
-    performance.now() - startedAt <
-      EVOLUTION_MAX_GENERATION_RUNTIME_MS
+    simulation.frames < EVOLUTION_HEADLESS_MAX_FRAMES
   ) {
     // Each loop is one environment transition:
     // observe -> choose action -> advance simulation.
