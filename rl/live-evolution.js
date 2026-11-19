@@ -20,13 +20,13 @@ function startLiveEvolution(generations = 1000, options = {}) {
   const settings = Object.assign({
     // Warm-up prevents a lucky early result or a temporary plateau from
     // stopping training before the population has had time to explore.
-    minimumGenerations: 100,
+    minimumGenerations: 50,
     targetScore: 10,
     patience: 50,
     // This is an optional whole-training safety limit. Leave it disabled
     // by default because the requested limit applies per generation.
     maxRuntimeMs: null,
-    maxGenerationRuntimeMs: 10 * 60 * 1000,
+    maxGenerationRuntimeMs: 5 * 60 * 1000,
     validationEpisodes: 5
   }, options, {
     maxGenerations: generations
@@ -50,6 +50,7 @@ function startLiveEvolution(generations = 1000, options = {}) {
     playbackSimulation: null,
     transitioning: false,
     generationsWithoutImprovement: 0,
+    consecutiveGenerationTimeouts: 0,
     startedAt: performance.now(),
     generationStartedAt: performance.now(),
     stopReason: null,
@@ -148,8 +149,24 @@ function runLiveEvolutionFrame() {
   requestAnimationFrame(runLiveEvolutionFrame);
 }
 
+function formatTimeRemaining(milliseconds) {
+  const totalSeconds = Math.ceil(Math.max(0, milliseconds) / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${String(minutes).padStart(2, '0')}:` +
+    `${String(seconds).padStart(2, '0')}`;
+}
+
 function finishLiveGeneration(reason = null) {
   const state = liveEvolutionState;
+
+  if (reason === 'GENERATION TIME LIMIT REACHED') {
+    state.consecutiveGenerationTimeouts++;
+  } else {
+    // A generation that finishes naturally breaks the timeout streak.
+    state.consecutiveGenerationTimeouts = 0;
+  }
 
   // Convert simulation state into the fitness records used by selection.
   const results = state.agents.map(agent => ({
@@ -202,6 +219,11 @@ function finishLiveGeneration(reason = null) {
     state.generationsWithoutImprovement >= state.settings.patience
   ) {
     stopReason = 'NO IMPROVEMENT';
+  } else if (
+    pastWarmup &&
+    state.consecutiveGenerationTimeouts >= 3
+  ) {
+    stopReason = '3 CONSECUTIVE GENERATION TIMEOUTS';
   }
 
   if (stopReason) {
@@ -224,7 +246,9 @@ function finishLiveGeneration(reason = null) {
   evolutionStatus.textContent =
     `${reason ? reason + '  ' : ''}` +
     `GENERATION ${state.generation - 1} COMPLETE  ` +
-    `BEST PIPES: ${best.score}  NEXT GENERATION STARTING...`;
+    `CURRENT: ${best.score}  ` +
+    `ALL-TIME: ${state.bestOverall.score}  ` +
+    `NEXT GENERATION STARTING...`;
 
   setTimeout(() => {
     if (liveEvolutionState && liveEvolutionState.running) {
@@ -285,12 +309,17 @@ function updateEvolutionStatus(best) {
     return;
   }
 
+  const timeRemaining =
+    liveEvolutionState.settings.maxGenerationRuntimeMs -
+    (performance.now() - liveEvolutionState.generationStartedAt);
+
   evolutionStatus.textContent =
     `GENERATION ${liveEvolutionState.generation}/` +
     `${liveEvolutionState.totalGenerations}  ` +
     `BEST PIPES: ${best.score}  ` +
     `BEST FRAMES: ${best.survivalFrames}  ` +
-    `REWARD: ${best.totalReward}`;
+    `REWARD: ${best.totalReward}  ` +
+    `TIME LEFT: ${formatTimeRemaining(timeRemaining)}`;
 }
 
 function drawLiveEvolution() {
@@ -347,15 +376,24 @@ function drawLiveEvolution() {
     scores.reduce((total, score) => total + score, 0) /
     scores.length;
   const bestScore = Math.max(...scores);
+  const historicalBestScore = state.bestOverall
+    ? state.bestOverall.score
+    : bestScore;
   const aliveCount = state.agents.filter(
     agent => !agent.simulation.done
   ).length;
+  const timeRemaining =
+    state.settings.maxGenerationRuntimeMs -
+    (performance.now() - state.generationStartedAt);
 
   evolutionStatus.textContent =
     `GEN ${state.generation}/${state.totalGenerations}  ` +
-    `BEST PIPES: ${bestScore}  ` +
+    `CURRENT: ${bestScore}  ` +
+    `ALL-TIME: ${historicalBestScore}  ` +
     `AVG PIPES: ${averageScore.toFixed(2)}  ` +
-    `ALIVE: ${aliveCount}`;
+    `ALIVE: ${aliveCount}  ` +
+    `TIME LEFT: ${formatTimeRemaining(timeRemaining)}  ` +
+    `TIMEOUTS: ${state.consecutiveGenerationTimeouts}/3`;
 
   ctx.fillText(`ALIVE: ${aliveCount}`, 14, 58);
 }
