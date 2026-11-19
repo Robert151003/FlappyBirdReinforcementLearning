@@ -21,6 +21,12 @@
 <body>
   <div id="game-container">
     <canvas id="gameCanvas" width="360" height="640"></canvas>
+
+    <div id="evolution-view" class="hidden">
+      <canvas id="evolutionCanvas" width="360" height="640"></canvas>
+      <div id="evolution-status"></div>
+      <button id="evolution-stop-btn" type="button">STOP EVOLUTION</button>
+    </div>
     
     <div id="ui-overlay">
       <!-- Start Screen -->
@@ -123,5 +129,9 @@
 
   <script src="game.js"></script>
   <script src="rl/environment.js"></script>
+  <script src="rl/genome.js"></script>
+  <script src="rl/simulation.js"></script>
+  <script src="rl/evolution.js"></script>
+  <script src="rl/live-evolution.js"></script>
 </body>
 </html>

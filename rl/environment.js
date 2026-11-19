@@ -1,9 +1,16 @@
+// This file is a browser-facing RL adapter around the existing game.
+// It exposes the usual environment operations:
+//
+//   observation -> action -> next observation, reward, done
+//
+// The evolutionary trainer uses rl/simulation.js instead because this
+// adapter depends on the real DOM game and requestAnimationFrame.
 let episodeReward = 0;
 let rewardedPipe = null;
-let progressRewardGiven = false;
 let nearRewardGiven = false;
 
 function getNextPipe() {
+    // The policy only needs the first pipe that the bird has not passed.
     const state = getGameState();
 
     return state.pipes.find(
@@ -20,6 +27,9 @@ function getObservation() {
         return null;
     }
 
+    // Convert raw game state into features an agent can use.
+    // The vertical distance is signed: positive means the gap is below
+    // the bird and negative means it is above the bird.
     const gapCenter = nextPipe.top + pipes.gap / 2;
     const horizontalDistance = nextPipe.x - bird.x;
     const verticalDistance = gapCenter - state.birdY;
@@ -30,17 +40,17 @@ function getObservation() {
         distanceToPipe: horizontalDistance,
         verticalDistanceToGapCenter: verticalDistance,
         distanceToGapCenter: Math.hypot(
-        horizontalDistance,
-        verticalDistance
+            horizontalDistance,
+            verticalDistance
         )
     };
 }
 
 
 function reset() {
+    // Reset both the game and the reward bookkeeping for a new episode.
     episodeReward = 0;
     rewardedPipe = null;
-    progressRewardGiven = false;
     nearRewardGiven = false;
 
     startGame();
@@ -49,6 +59,7 @@ function reset() {
 }
 
 function flap(){
+    // Action 1 means flap. Action 0 means let physics continue naturally.
     bird.flap();
 }
 
@@ -63,17 +74,21 @@ function calculateStepReward(
 ) {
     let stepReward = 0;
 
+    // Reward events are sparse and meaningful:
+    // passing a pipe is the main objective.
     if (currentScore > previousScore) {
         stepReward += 3;
     }
 
     if (done) {
+        // Death is discouraged, but the penalty is smaller than the
+        // pipe reward so the agent still has a useful learning signal.
         stepReward -= 2;
     }
 
     if (afterPipe !== rewardedPipe) {
+        // Reward the near-gap event at most once for each pipe.
         rewardedPipe = afterPipe;
-        progressRewardGiven = false;
         nearRewardGiven = false;
     }
 
@@ -84,21 +99,14 @@ function calculateStepReward(
 
     if (samePipe && beforeObservation && afterObservation) {
         if (
-        !progressRewardGiven &&
-        beforeObservation.distanceToGapCenter > 250 &&
-        afterObservation.distanceToGapCenter <= 250
+            !nearRewardGiven &&
+            beforeObservation.distanceToGapCenter > 50 &&
+            afterObservation.distanceToGapCenter <= 50
         ) {
-        stepReward += 1;
-        progressRewardGiven = true;
-        }
-
-        if (
-        !nearRewardGiven &&
-        beforeObservation.distanceToGapCenter > 50 &&
-        afterObservation.distanceToGapCenter <= 50
-        ) {
-        stepReward += 2;
-        nearRewardGiven = true;
+            // This shaping reward encourages the bird to approach the
+            // current gap, but does not award distance-based progress.
+            stepReward += 2;
+            nearRewardGiven = true;
         }
     }
 
@@ -107,6 +115,7 @@ function calculateStepReward(
 
 
 async function step(action) {
+    // Validate the discrete action space before changing the game.
     if (action !== 0 && action !== 1) {
         throw new Error('Action must be 0 or 1');
     }
@@ -119,6 +128,7 @@ async function step(action) {
         flap();
     }
 
+    // The browser game advances asynchronously, one rendered frame at a time.
     await new Promise(resolve => requestAnimationFrame(resolve));
 
     const afterState = getGameState();
@@ -126,6 +136,8 @@ async function step(action) {
     const afterPipe = getNextPipe();
     const done = gameState === STATE.GAMEOVER;
 
+    // Compare the state before and after the frame to detect events that
+    // happened during this action.
     const stepReward = calculateStepReward(
         beforeObservation,
         afterObservation,
@@ -138,6 +150,7 @@ async function step(action) {
 
     episodeReward += stepReward;
 
+    // This is the standard environment transition returned to an agent.
     return {
         observation: afterObservation,
         reward: stepReward,

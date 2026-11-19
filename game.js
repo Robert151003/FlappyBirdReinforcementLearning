@@ -1487,6 +1487,7 @@ function updateParticles() {
 
 function startGame() {
   initAudio();
+  window.aiPlaybackActive = false;
   gameState = STATE.PLAYING;
   score = 0;
   frames = 0;
@@ -1502,6 +1503,7 @@ function startGame() {
 function triggerGameOver() {
   if (gameState !== STATE.PLAYING) return;
   gameState = STATE.GAMEOVER;
+  window.aiPlaybackActive = false;
   playSound('hit');
   setTimeout(() => playSound('die'), 120);
 
@@ -1532,6 +1534,7 @@ function triggerGameOver() {
 let lastActionTime = 0;
 function handleUserAction() {
   if (!customModal.classList.contains('hidden')) return;
+  if (window.aiPlaybackActive) return;
   initAudio();
   const now = Date.now();
   if (now - lastActionTime < 140) return;
@@ -1580,11 +1583,29 @@ restartBtn.addEventListener('click', (e) => {
 });
 
 function loop() {
+  if (window.liveEvolutionActive) {
+    requestAnimationFrame(loop);
+    return;
+  }
+
   frames++;
 
   if (gameState !== STATE.GAMEOVER) {
     bgOffset += 0.8;
     groundOffset += pipes.dx;
+  }
+
+  if (
+    window.aiPlaybackActive &&
+    gameState === STATE.PLAYING &&
+    window.bestGenomeForPlayback &&
+    typeof getObservation === 'function' &&
+    typeof chooseAction === 'function'
+  ) {
+    const observation = getObservation();
+    if (chooseAction(window.bestGenomeForPlayback, observation) === 1) {
+      bird.flap();
+    }
   }
 
   bird.update();
