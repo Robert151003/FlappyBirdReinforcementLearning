@@ -220,9 +220,10 @@ function finishLiveGeneration(reason = null) {
   ) {
     stopReason = 'NO IMPROVEMENT';
   } else if (
-    pastWarmup &&
     state.consecutiveGenerationTimeouts >= 3
   ) {
+    // Three consecutive generation timeouts indicate that the population
+    // is stalled, so this safety rule is not delayed by warm-up.
     stopReason = '3 CONSECUTIVE GENERATION TIMEOUTS';
   }
 
